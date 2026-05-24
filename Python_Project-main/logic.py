@@ -1,5 +1,8 @@
 import os
 import shutil
+import requests
+
+
 import uuid
 from datetime import datetime
 
@@ -80,6 +83,65 @@ def commit(message="No message provided"):
     print("Staging area cleared.")
 
 
+
+
+def push():
+    if not os.path.exists(WIT_DIR):
+        print("Error: Not a WIT repository. Run 'init' first.")
+        return
+
+    # שני הנתיבים של השרת
+    url_alerts = "http://127.0.0.1:8000/alerts"
+    url_analyze = "http://127.0.0.1:8000/analyze"
+
+    # איסוף קבצי הפייתון מה-Staging
+    py_files = []
+    for root, dirs, files in os.walk(STAGING_DIR):
+        for file in files:
+            if file.endswith(".py"):
+                py_files.append(os.path.join(root, file))
+
+    if not py_files:
+        print("Nothing to push. Staging area has no Python (.py) files.")
+        return
+
+    print(f"Found {len(py_files)} Python file(s) in staging. Sending to CodeGuard...")
+
+    # פתיחת הקבצים ושליחתם לנתיב ה-Alerts (ההדפסה שראיתן)
+    files_payload = []
+    opened_files = []
+    try:
+        for file_path in py_files:
+            f = open(file_path, 'rb')
+            opened_files.append(f)
+            rel_name = os.path.relpath(file_path, STAGING_DIR)
+            files_payload.append(('files', (rel_name, f)))
+
+        # פנייה 1: קבלת האזהרות לטרמינל
+        response_alerts = requests.post(url_alerts, files=files_payload)
+        print("Server Response:", response_alerts.json())
+
+        # איפוס המיקום בקבצים כדי לשלוח אותם שוב בבקשה השנייה
+        for f in opened_files:
+            f.seek(0)
+
+        # פנייה 2: בקשת קובץ הגרף ושמירתו למחשב
+        print("Generating and downloading visual metrics chart...")
+        response_analyze = requests.post(url_analyze, files=files_payload)
+
+        if response_analyze.status_code == 200:
+            output_chart_name = "code_quality_metrics.png"
+            with open(output_chart_name, "wb") as chart_file:
+                chart_file.write(response_analyze.content)
+            print(f" Success: Chart saved as '{output_chart_name}' in your repository!")
+        else:
+            print("Failed to generate chart. Server returned status:", response_analyze.status_code)
+
+    except requests.exceptions.ConnectionError:
+        print("❌ Error: Could not connect to the server. Is FastAPI running on port 8000?")
+    finally:
+        for f in opened_files:
+            f.close()
 def status():
     if not os.path.exists(WIT_DIR):
         print("Not a WIT repository.")

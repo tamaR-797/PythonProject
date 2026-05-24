@@ -33,5 +33,9 @@ def checkout(commit_id):
     """אחראי על שחזור גרסה קודמת"""
     logic.checkout(commit_id)
 
+@cli.command()
+def push():
+    """אחראי על שליחת הקבצים מה-staging לניתוח בשרת CodeGuard"""
+    logic.push()
 if __name__ == "__main__":
     cli()
