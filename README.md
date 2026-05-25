@@ -1,71 +1,39 @@
-🛠 WIT - Python Version Control System WIT is a lightweight version control system (VCS) written in Python. The project simulates the core operations of Git, allowing users to track changes to files in a simple and efficient way via the command line.
+# CodeGuard-WIT: Static Code Analysis & Version Control System
 
-🏗 System architecture The project was built with strict attention to separation of concerns:
+An integrated system combining a local version control tool (CLI) with a centralized server for software quality assurance and static code analysis, built on a client-server architecture.
 
-wit.py (The Interface): Responsible for the user interface (CLI) using the click library. It serves as the "skeleton" of commands and guides the user to execute the logic.
+---
 
-logic.py (The Engine): Contains all the technical implementation - file management, recursive copies, creating unique commits and version recovery.
+## 📂 Project Files Explained
 
-📋 Available commands To initialize the project and run it, type in the command line: pip install -r requirements.txt
+The project consists of two main directories that communicate with each other over the network:
 
-Initialize the system (init) Creates the infrastructure required for system operation: a .wit folder that includes the Staging area and the commit folder.
-Bash python wit.py init 2. Add files (add) Copies files or entire folders into the Staging area.
+### 1. Local Client Directory (`Python_Project-main`)
+This is the workspace where the developer manages their source code:
+* **`wit.py`**: The Command Line Interface (CLI). This file captures your terminal commands (such as `init`, `add`, `push`) and routes them to the appropriate application logic.
+* **`logic.py`**: The "brain" of the client application. This file contains the `push()` function. It scans the staging directory, collects Python files, transmits them over the network to the server using two distinct HTTP POST requests, downloads the dynamic chart image, and clears the staging area upon success.
+* **`test.py`**: Your validation test file. It contains intentional code flaws (e.g., Hebrew variable names, long functions, and unused variables) to verify that the analysis engine detects anomalies correctly.
 
-The system supports recursive addition.
+### 2. Centralized Analysis Server Directory (`codeguard_server`)
+This is the backend service that inspects code quality and generates reporting structures:
+* **`main.py`**: The server application built with **FastAPI**. It receives incoming source files from the WIT client, parses their structural layout using the **AST** (Abstract Syntax Tree) module without executing the code, uncovers rule violations, and renders a visual bar chart (PNG) utilizing **Matplotlib** running in a headless `Agg` background context.
 
-The system ignores files defined in .witignore or system files (such as venv).
+---
 
-Bash python wit.py add <path_to_file_or_folder>
+## 🛡️ Static Analysis Rules
 
-Or to add the entire current folder:
-python wit.py add . 3. Create a version (commit) Saves the current state of the Staging as a permanent version.
+The server's AST engine parses the source code to flag five structural and stylistic issues:
+1. **File Length**: Any source file exceeding 200 total lines triggers an alert (overly long files degrade overall system maintainability).
+2. **Function Length**: Every function definition block (`ast.FunctionDef`) is measured from its declaration line to its termination. Functions exceeding 20 lines trigger a warning.
+3. **Missing Docstring**: The system utilizes `ast.get_docstring` to check whether an introductory documentation block (`"""docstring"""`) is defined at the start of each function body.
+4. **Unused Variables**: Within each function scope, the module differentiates between variables defined in an assignment context (`ast.Store`) and those retrieved for execution (`ast.Load`). Any variable initialized but never referenced is reported as dead code.
+5. **Hebrew Character Detection**: Variable identifiers (`ast.Name`) are scanned using a Regular Expression (**Regex**) mapping to the Hebrew Unicode spectrum `[\u0590-\u05fe]` to enforce universal, international naming standards.
 
-Uniqueness: Each commit receives a short unique identifier (ID) generated using a UUID.
+---
 
-Automatic cleanup: After the commit, the staging area is cleaned up to prevent duplicates.
+## 🛠️ Prerequisites & Installation
 
-Optional: You can add a message describing the change.
+Before spinning up the application, ensure you have Python 3.10 or higher installed, then install the necessary dependencies via your terminal:
 
-Bash python wit.py commit -m "Your descriptive message"
-
-Or without a message (will use the default):
-python wit.py commit 4. Check status Shows which files are currently waiting in Staging and have not yet been committed.
-
-Bash python wit.py status 5. Checkout Allows you to "go back in time". The command deletes the current working files and restores them exactly as they were in the specific commit selected.
-
-Bash python wit.py checkout <commit_id> 🛠 Requirements and installation Make sure you have Python installed (version 3.7 or higher).
-
-Install the project's only dependency:
-
-Bash pip install click Make sure that the wit.py and logic.py files are always in the same folder.
-
-⚙️ Ignore Settings (.witignore) You can create a file named .witignore in the main folder. Any file or folder name written in it (one line per name) will not be entered into the version control system when executing the add command.
-
-🔍 Example Scenarios Step 1: Initialize the repository Bash python wit.py init
-
-Output: Initialized empty WIT repository in .wit/
-Step 2: Add files to staging Bash
-
-Create a file
-echo "Hello World" > hello.txt
-
-Add it
-python wit.py add hello.txt
-
-Output: Added hello.txt to staging area.
-Step 3: Check status Bash python wit.py status
-
-Output:
---- Status ---
-Files staged for commit:
-(staged): hello.txt
-Untracked files:
-(none)
-Step 4: Create a commit Bash python wit.py commit -m "Initial commit"
-
-Output: Created commit a1b2c3d4: Initial commit
-Staging area cleared.
-Step 5: Checkout (Going back in time) Bash python wit.py checkout a1b2c3d4
-
-Output: Switched to commit a1b2c3d4.
-Developed by Computer Science students (Tamar Rothen, Shira Shemesh, Ayla Samson) - 2nd year😀.
+```bash
+pip install fastapi uvicorn python-multipart matplotlib requests
