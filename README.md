@@ -37,3 +37,8 @@ Before spinning up the application, ensure you have Python 3.10 or higher instal
 
 ```bash
 pip install fastapi uvicorn python-multipart matplotlib requests
+cd C:\Users\localadmin\Documents\GitHub\PythonProject\codeguard_server
+python -m uvicorn main:app --reload --host 127.0.0.1 --port 8000
+cd C:\Users\localadmin\Documents\GitHub\PythonProject\Python_Project-main
+python wit.py add test.py
+python wit.py push
